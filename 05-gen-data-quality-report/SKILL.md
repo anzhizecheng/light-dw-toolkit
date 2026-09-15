@@ -8,10 +8,7 @@ description: |
   适用阶段：Phase 7 数据源分析
   
   绑定模板：
-  - 数据源分析报告@BBB-CCC 103 20060823.doc
-  - 数据特性性分析@BBB-CCC 103 20060823.xls
-  - 字段代码及值域分析@BBB-CCC 103 20060823.xls
-  - scripts/data_quality_check.sql
+  - templates/05-data-quality-report.yaml
   
   输入不足处理：
   - 若未提供 DDL，无法生成字段级评估

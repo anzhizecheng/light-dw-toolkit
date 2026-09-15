@@ -8,8 +8,7 @@ description: |
   适用阶段：Phase 12 系统开发（单元测试环节）
 
   绑定模板：
-  - 单元测试报告-ETL(OLAP、应用、流程)@BBB-CCC 104.doc
-  - 开发任务进度及单元测试跟踪@BBB-CCC 104 20060822.xls
+  - templates/14-etl-unit-tests.sql
 
   输入不足处理：
   - 若未提供目标表 DDL，标注「需要 DDL 生成测试」

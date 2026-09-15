@@ -8,9 +8,7 @@ description: |
   适用阶段：Phase 8 数据模型设计（物理设计阶段）+ Phase 12 系统开发（部署阶段）
 
   绑定模板：
-  - 数据模型物理设计@BBB-CCC 103 20060823.doc
-  - 数据模型设计规范@BBB-CCC 103 20060823.doc
-  - 数据模型命名及编码规范@BBB-CCC 103 20060823.doc
+  - templates/08-ddl-spec.yaml
 
   输入不足处理：
   - 若未提供维度模型（LDM），提示先使用 gen-dimension-model

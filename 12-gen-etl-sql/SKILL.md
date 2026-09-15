@@ -8,10 +8,7 @@ description: |
   适用阶段：Phase 12 系统开发
 
   绑定模板：
-  - ETL详细设计说明书@BBB-CCC 103 20060928.doc
-  - MAPPING_XX_XX@BBB-CCC 103 20060823.xls
-  - 异常（脏）数据问题跟踪@BBB-CCC 103 20060823.xls
-  - 数据规模估算表.xlsx
+  - templates/12-etl-sql.md
 
   输入不足处理：
   - 若未提供 PDM，无法生成目标表结构相关代码

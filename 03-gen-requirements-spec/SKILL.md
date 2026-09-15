@@ -8,10 +8,7 @@ description: |
   适用阶段：Phase 3 系统需求
   
   绑定模板：
-  - 需求规格说明书@BBB-CCC 102 20060823.doc
-  - 需求分析报告@BBB-CCC 102 20131205.doc
-  - 需求详细分析@BBB-CCC 102 20131205.xls
-  - 指标维度需求分析汇总表@BBB-CCC 102 20131205.xls
+  - templates/03-requirements-spec.md
   
   输入不足处理：
   - 若未提供业务报表清单，输出待确认项框架

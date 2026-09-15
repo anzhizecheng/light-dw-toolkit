@@ -8,8 +8,7 @@ description: |
   适用阶段：Phase 3 系统需求（也可独立运行）
   
   绑定模板：
-  - 指标维度需求分析汇总表@BBB-CCC 102 20131205.xls
-  - KPI调研表格@BBB-CCC 102 20131205.xlsx
+  - templates/04-metrics-dictionary.yaml
   
   输入不足处理：
   - 若未提供指标清单，输出指标框架模板

@@ -8,10 +8,7 @@ description: |
   适用阶段：Phase 7 数据源分析（也可独立运行）
   
   绑定模板：
-  - 数据源结构调查报告@BBB-CCC 102 20060823.xls
-  - 表字段代码及值域分析@BBB-CCC 102 20060823.xls
-  - 数据特性分析@BBB-CCC 102 20060823.xls
-  - 系统环境调查报告@BBB-CCC 102 20061106.doc
+  - templates/06-source-data-dict.yaml
   
   输入不足处理：
   - 若未提供源系统清单，输出数据源调研框架

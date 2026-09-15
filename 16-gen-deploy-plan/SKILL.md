@@ -8,11 +8,7 @@ description: |
   适用阶段：Phase 14 上线与试运行
   
   绑定模板：
-  - 系统上线方案@BBB-CCC 107 20061205.doc
-  - 系统试运行报告@BBB-CCC 107 20060822.doc
-  - 生产环境网络统计列表@BBB-CCC 107 20060822.xls
-  - 系统运维操作申请日志@BBB-CCC 107 20060823.xls
-  - 系统运维操作记录@BBB-CCC 107 20060823.xls
+  - templates/16-deploy-plan.md
   
   输入不足处理：
   - 若未提供生产环境信息，标注「待补充」

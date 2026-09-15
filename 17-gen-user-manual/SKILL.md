@@ -8,10 +8,7 @@ description: |
   适用阶段：Phase 13 系统测试及培训 + Phase 15 验收转产维护
 
   绑定模板：
-  - 用户使用手册@BBB-CCC 105 20060823.doc
-  - 系统培训计划@BBB-CCC 105 20060823.xls
-  - 系统培训反馈@BBB-CCC 105 20060823.xls
-  - 系统操作手册（按角色）
+  - templates/17-user-manual.md
 
   输入不足处理：
   - 若未提供功能清单，提示先调用 gen-requirements-spec

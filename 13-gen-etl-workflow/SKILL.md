@@ -8,8 +8,7 @@ description: |
   适用阶段：Phase 12 系统开发
 
   绑定模板：
-  - ETL概要设计说明书@BBB-CCC 103 20060823.doc
-  - 数据转换流程图_XX_XX@BBB-CCC 103 20060823.vsd（建议改 SVG/Mermaid）
+  - templates/13-etl-workflow.yaml
 
   输入不足处理：
   - 若未提供调度系统，生成通用 Airflow Python DAG（可移植）

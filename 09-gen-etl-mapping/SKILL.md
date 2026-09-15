@@ -8,9 +8,7 @@ description: |
   适用阶段：Phase 9 ETL 设计（详细设计阶段）
 
   绑定模板：
-  - ETL详细设计说明书@BBB-CCC 103 20060928.doc
-  - MAPPING_XX_XX@BBB-CCC 103 20060823.xls
-  - 异常（脏）数据问题跟踪@BBB-CCC 103 20060823.xls
+  - templates/09-etl-mapping.yaml
 
   输入不足处理：
   - 若未提供 DDL 清单（来自 gen-ddl-scripts），提示先使用 gen-ddl-scripts

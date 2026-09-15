@@ -8,9 +8,7 @@ description: |
   适用阶段：Phase 11 测试计划及设计 + Phase 13 系统测试及培训
 
   绑定模板：
-  - 测试用例设计@BBB-CCC 103 20060823.xls
-  - 测试用例.xlsx
-  - BI前期调研模版 V2.0.xls（含需求活动检查清单）
+  - templates/11-test-cases.yaml
 
   输入不足处理：
   - 若未提供功能清单，输出测试用例框架

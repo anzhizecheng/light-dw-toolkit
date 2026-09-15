@@ -8,10 +8,7 @@ description: |
   适用阶段：Phase 8 数据模型设计（概要设计阶段）
   
   绑定模板：
-  - 数据模型概要设计@BBB-CCC 103 20060823.doc
-  - 数据模型物理设计@BBB-CCC 103 20060823.doc
-  - 数据模型设计规范@BBB-CCC 103 20060823.doc
-  - 数据模型命名及编码规范@BBB-CCC 103 20060823.doc
+  - templates/07-dimension-model.md
   
   输入不足处理：
   - 若未提供业务过程清单，输出主题域划分框架

@@ -213,7 +213,7 @@ templates/
 ## 目录结构
 
 ```
-dw-functional-skills/
+light-dw-toolkit/
 ├── LICENSE                         # Apache 2.0
 ├── CITATION.cff                    # 引用文件
 ├── README.md                       # 本文档
@@ -245,13 +245,13 @@ dw-functional-skills/
   month   = sep,
   version = {2.0.0},
   license = {Apache-2.0},
-  url     = {https://github.com/anzhizecheng/dw-functional-skills},
+  url     = {https://github.com/anzhizecheng/light-dw-toolkit}
 }
 ```
 
 ### 纯文本
 
-> anzhizecheng. (2026). _light dw toolkit: 轻量级数据仓库建设 AI 工具箱_ (v2.0.0). [Computer software]. [https://github.com/anzhizecheng/dw-functional-skills](https://github.com/anzhizecheng/dw-functional-skills)
+> anzhizecheng. (2026). _light dw toolkit: 轻量级数据仓库建设 AI 工具箱_ (v2.0.0). [Computer software]. [https://github.com/anzhizecheng/light-dw-toolkit](https://github.com/anzhizecheng/light-dw-toolkit)
 
 ### 直接复制 CITATION.cff
 

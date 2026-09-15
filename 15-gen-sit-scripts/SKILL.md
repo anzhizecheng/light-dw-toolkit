@@ -8,11 +8,7 @@ description: |
   适用阶段：Phase 13 系统测试
 
   绑定模板：
-  - 测试用例设计@BBB-CCC 103 20060823.xls
-  - 测试用例.xlsx
-  - 测试报告@BBB-CCC 105 20060823.doc
-  - 测试状态跟踪@BBB-CCC 105 20060823.xls
-  - 测试缺陷跟踪@BBB-CCC 105 20060823.xls
+  - templates/15-sit-tests.yaml
 
   输入不足处理：
   - 若未提供测试环境，标注「待配置」
