@@ -1,0 +1,28 @@
+# ETL 字段映射 — 精简模板
+load_order:
+  - stage: DIM
+    tables: [dim_user, dim_product, dim_date]
+  - stage: ODS
+    tables: [ods_crm_order, ods_erp_sale]
+  - stage: DWD
+    tables: [dwd_sales_order, dwd_user_profile]
+  - stage: DWS
+    tables: [dws_sales_user_d, dws_sales_region_d]
+  - stage: ADS
+    tables: [ads_sales_dashboard]
+
+mappings:
+  - target_table: dwd_sales_order
+    source_table: ods_crm_order
+    business_keys: [order_id]
+    fields:
+      - {source: order_id, target: order_id, transform: none}
+      - {source: order_amt, target: order_amount, transform: CAST AS DECIMAL(18,2)}
+      - {source: create_time, target: create_time, transform: none}
+    joins: []
+    filters: []
+    deduplication: {strategy: business_key, window: "ROW_NUMBER() OVER(PARTITION BY order_id ORDER BY update_time DESC)"}
+
+dependency_graph:
+  dws_sales_user_d: [dwd_sales_order, dim_user, dim_date]
+  ads_sales_dashboard: [dws_sales_user_d, dws_sales_region_d]

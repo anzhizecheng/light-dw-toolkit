@@ -1,0 +1,27 @@
+# 物理 DDL 规范 — 精简模板
+layer_architecture: standard_4layer  # standard_4layer | simplified_3layer | custom
+layer_list: [ODS, DWD, DWS, ADS, DIM]
+
+naming_convention:
+  table_pattern: {layer}_{subject}_{business_process}
+  field_pattern: snake_case
+  forbidden_words: [order, group, user, key, comment, desc]
+
+default_settings:
+  partition_field: dt
+  partition_type: STRING
+  storage_format: ORC
+  compression: SNAPPY
+  lifecycle_days: 3650
+
+audit_fields:
+  - {name: etl_time, type: TIMESTAMP, comment: ETL 处理时间}
+  - {name: etl_batch_id, type: STRING, comment: ETL 批次号}
+  - {name: source_system, type: STRING, comment: 来源系统}
+
+partition_strategy:
+  ods: {strategy: dt, reason: T+1 增量}
+  dwd: {strategy: dt, reason: 明细层}
+  dim: {strategy: dt(拉链), reason: 保留历史}
+  dws: {strategy: dt, reason: 汇总层}
+  ads: {strategy: dt, reason: 应用层}

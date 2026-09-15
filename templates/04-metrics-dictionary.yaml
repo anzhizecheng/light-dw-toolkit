@@ -1,0 +1,12 @@
+# 指标体系字典 — 精简模板
+metrics:
+  - code: MET_XXX_001
+    name: 指标名称
+    business_definition: 业务定义
+    formula: SQL/formula
+    data_type: DECIMAL(18,2)
+    unit: 元/个/%
+    dimensions: [date, region, product]
+    granularity: day
+    owner: 责任人
+    source_table: dwd_xxx

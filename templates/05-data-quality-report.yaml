@@ -1,0 +1,30 @@
+# 数据质量评估报告 — 精简模板
+# 5 维度：完整性 / 一致性 / 准确性 / 唯一性 / 时效性
+tables:
+  - table: ods_crm_order
+    dimensions:
+      completeness:
+        null_rate: 0.01
+        effective_rule: ">= 0 AND <= 999999"
+        status: good
+      uniqueness:
+        uniqueness_rate: 1.0
+        business_keys: [order_id]
+        status: good
+      consistency:
+        fk_checks: [{fk: region_id, ref_table: dim_region, ref_field: region_id}]
+        status: good
+      accuracy:
+        value_range: {min: 0, max: 9999999}
+        enum_values: {status: [paid, pending, cancelled]}
+        status: good
+      timeliness:
+        update_frequency: daily
+        lag_minutes: 30
+        status: good
+    overall_status: good
+summary:
+  total_tables: 0
+  good: 0
+  warning: 0
+  critical: 0

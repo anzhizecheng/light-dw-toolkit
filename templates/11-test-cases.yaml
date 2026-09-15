@@ -1,0 +1,34 @@
+# SIT/UAT 测试用例集 — 精简模板
+categories:
+  functional:
+    description: 功能测试
+    cases:
+      - id: TC_FN_001
+        title: DWD 层订单表全量加载
+        precondition: ddl 已执行
+        steps: [执行 INSERT OVERWRITE 脚本]
+        expected: 表非空，主键唯一
+  data_accuracy:
+    description: 数据准确性测试
+    cases:
+      - id: TC_DA_001
+        title: 跨层对账 DWD vs ODS
+        precondition: 两层数据已加载
+        steps: [执行对账 SQL]
+        expected: 行数一致，度量值一致
+  process_stability:
+    description: 流程稳定性测试
+    cases:
+      - id: TC_PS_001
+        title: DAG 全量执行无报错
+        precondition: DAG 已部署
+        steps: [触发 DAG]
+        expected: 所有节点 SUCCESS
+  performance:
+    description: 性能测试
+    cases:
+      - id: TC_PF_001
+        title: ADS 报表响应 < 3s
+        precondition: 数据已就绪
+        steps: [执行报表查询]
+        expected: 响应时间 < 3000ms

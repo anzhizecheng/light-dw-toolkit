@@ -1,0 +1,38 @@
+# ETL 调度 DAG — 精简模板
+# 支持 Airflow / DolphinScheduler / Azkaban / Argo
+
+dag:
+  name: dw_etl_dag
+  cron: "0 2 * * *"
+  tasks:
+    - name: dim_user_load
+      type: sql
+      sql_file: jobs/dim_user_load.sql
+      deps: []
+    - name: dim_product_load
+      type: sql
+      sql_file: jobs/dim_product_load.sql
+      deps: []
+    - name: ods_crm_order_load
+      type: sql
+      sql_file: jobs/ods_crm_order_load.sql
+      deps: []
+    - name: clean_task_dwd_sales_order   # v1.2 新增 clean_task
+      type: sql
+      sql_file: jobs/clean_dwd_sales_order.sql
+      deps: [ods_crm_order_load]
+    - name: dwd_sales_order_transform
+      type: sql
+      sql_file: jobs/dwd_sales_order_transform.sql
+      deps: [clean_task_dwd_sales_order, dim_user_load, dim_product_load]
+    - name: dws_sales_user_d_agg
+      type: sql
+      sql_file: jobs/dws_sales_user_d_agg.sql
+      deps: [dwd_sales_order_transform]
+    - name: ads_sales_dashboard
+      type: sql
+      sql_file: jobs/ads_sales_dashboard.sql
+      deps: [dws_sales_user_d_agg]
+
+# v1.2 强制约束：每个 transform_task 之前必须有 clean_task
+# clean_task 读取 cleaning_rules.yaml，写入 cleaning_audit.log，拒绝数据落 dw_reject_records

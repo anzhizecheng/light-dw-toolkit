@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: If you use this project in research or production, please cite it as below.
+title: "light dw toolkit: 轻量级数据仓库建设 AI 工具箱"
+version: 2.0.0
+date-released: 2026-09-15
+license: Apache-2.0
+type: software
+repository: https://github.com/anzhizecheng/light-dw-toolkit
+url: https://github.com/anzhizecheng/light-dw-toolkit
+authors:
+  - family-names: "anzhizecheng"
+    given-names: ""
+    orcid: ""
+    affiliation: ""
+keywords:
+  - data-warehouse
+  - data-pipeline
+  - etl
+  - dbt
+  - natural-language-to-sql
+  - semantic-layer
+  - data-governance
+  - ai-skills
+  - llm-agents
+abstract: |
+  light dw toolkit 是一套面向 LLM Agent 的功能型 Skill 集合，覆盖数据仓库
+  建设全流程 — 从项目配置、需求分析、指标字典、数据源调研，到维度建模、
+  物理 DDL、ETL 字段映射、清洗规则、SQL 脚本、调度 DAG、单元测试、系统
+  集成测试、部署上线、用户手册。每个 Skill 可独立使用，也可串联组合。
+  配套 templates/ 目录提供精简模板（markdown / yaml / sql 格式），替换
+  了传统 .doc / .xls / .ppt / .vsd / .mpp 重型文档。
+preferred-citation:
+  type: software
+  title: "light dw toolkit: 轻量级数据仓库建设 AI 工具箱"
+  authors: "anzhizecheng"
+  year: "2026"
+  version: "2.0.0"
+  license: "Apache-2.0"
+  url: "https://github.com/anzhizecheng/light-dw-toolkit"

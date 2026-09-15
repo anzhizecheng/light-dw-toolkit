@@ -1,0 +1,30 @@
+# SIT 系统集成测试 — 精简模板
+# Phase 13 系统测试
+
+test_suites:
+  cross_layer_reconcile:
+    description: 跨层对账（ODS→DWD→DWS→ADS）
+    cases:
+      - id: SIT_CR_001
+        title: DWD 行数 vs ODS 行数
+        sql: |
+          SELECT 'SIT_CR_001' AS case_id,
+                 CASE WHEN ods_cnt = dwd_cnt THEN 'PASS' ELSE 'FAIL' END AS result,
+                 ods_cnt, dwd_cnt
+          FROM (SELECT COUNT(*) AS ods_cnt FROM ods_crm_order WHERE dt='${bizdate}') o
+          CROSS JOIN (SELECT COUNT(*) AS dwd_cnt FROM dwd_sales_order WHERE dt='${bizdate}') d;
+      - id: SIT_CR_002
+        title: DWS 汇总值 vs DWD 明细值
+
+  etl_pipeline:
+    description: ETL 端到端验证
+    cases:
+      - id: SIT_EP_001
+        title: DAG 全流程执行无报错
+
+  clean_audit:
+    description: 清洗审计验证
+    cases:
+      - id: SIT_CA_001
+        title: 拒绝数据量与审计日志一致
+        check: dw_reject_records.count vs cleaning_audit.log rejected_count

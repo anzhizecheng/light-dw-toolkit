@@ -1,0 +1,18 @@
+# 源端数据字典 — 精简模板
+sources:
+  - system: CRM
+    type: MySQL
+    tables:
+      - table: t_order
+        fields:
+          - {name: order_id, type: VARCHAR(32), pk: true, nullable: false, description: 订单号}
+          - {name: order_amt, type: DECIMAL(18,2), nullable: true, description: 订单金额}
+        row_count: 10000000
+        update_frequency: realtime
+        extract_method: CDC
+    code_tables:
+      order_status: {0: cancelled, 1: paid, 2: pending}
+environment:
+  architecture: 主从 + 读写分离
+  network: 10.0.0.0/24
+  collection: binlog + Canal

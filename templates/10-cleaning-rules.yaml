@@ -1,0 +1,106 @@
+# 数据清洗规则 — 精简模板 (gen-data-cleaning-rules 输出)
+# v1.5 P0 安全修复：CORRECT 动作为危险不可逆操作，必须走 3 阶段警示
+global:
+  reject_records_table: dw_reject_records
+  audit_log: cleaning_audit.log
+  reject_action: REJECT  # REJECT(丢) | QUARANTINE(隔离，待人工)
+
+rules:
+  - id: RULE_001
+    rule_type: deduplication
+    target: ods_crm_order
+    field: order_id
+    action: REJECT  # REJECT | CORRECT | PASS
+    description: 主键去重
+    sql: "ROW_NUMBER() OVER(PARTITION BY order_id ORDER BY update_time DESC) = 1"
+  - id: RULE_002
+    rule_type: value_clamp
+    target: ods_crm_order
+    field: order_amount
+    action: REJECT
+    min: 0
+    max: 9999999.99
+    description: 数值值域裁剪
+  - id: RULE_003
+    rule_type: enum_mapping
+    target: ods_crm_order
+    field: status
+    action: REJECT
+    mapping: {0: cancelled, 1: paid, 2: pending}
+    description: 枚举值标准化
+  - id: RULE_004
+    rule_type: format_normalize
+    target: ods_crm_order
+    field: order_date
+    action: CORRECT  # 危险：不可逆
+    pattern: "[/\\.]"
+    replace: "-"
+    description: 日期格式统一
+    # v1.5 CORRECT 3 阶段警示：
+    #   1. 首次遇到 CORRECT → 输出 WARNING 并暂停请求用户确认
+    #   2. 用户确认 → 继续执行并写入 cleaning_audit.log
+    #   3. 用户拒绝 → 自动降级为 REJECT + QUARANTINE
+  - id: RULE_005
+    rule_type: string_normalize
+    target: ods_crm_order
+    field: customer_name
+    action: CORRECT  # 危险
+    operations: [trim, lowercase]
+    description: 字符串归一化
+  - id: RULE_006
+    rule_type: outlier_detection
+    target: dwd_sales_order
+    field: order_amount
+    action: REJECT
+    method: zscore
+    threshold: 5.0
+    description: 异常值检测
+  - id: RULE_007
+    rule_type: cross_table_check
+    target: dwd_sales_order
+    field: region_id
+    action: REJECT
+    ref_table: dim_region
+    ref_field: region_id
+    description: 维表引用完整性
+  - id: RULE_008
+    rule_type: fk_check
+    target: dwd_sales_order
+    field: user_key
+    action: REJECT
+    ref_table: dim_user
+    ref_field: user_key
+    description: 外键完整性
+  - id: RULE_009
+    rule_type: missing_value
+    target: ods_crm_order
+    field: order_id
+    action: REJECT
+    strategy: drop_row  # drop_row | default_value
+    default: null
+    description: 空值处理
+  - id: RULE_010
+    rule_type: domain_constraint
+    target: dwd_sales_order
+    field: order_date
+    action: REJECT
+    constraint: "order_date >= '2000-01-01' AND order_date <= CURRENT_DATE"
+    description: 业务领域约束
+
+reject_records_schema.sql: |
+  CREATE TABLE dw_reject_records (
+      reject_id STRING,
+      skill_name STRING,
+      source_table STRING,
+      target_table STRING,
+      bizdate STRING,
+      layer STRING,
+      field_name STRING,
+      field_value STRING,
+      reject_rule_type STRING,
+      reject_rule_name STRING,
+      reject_reason STRING,
+      full_row STRING,
+      rejected_at TIMESTAMP,
+      resolved BOOLEAN DEFAULT FALSE
+  ) PARTITIONED BY (dt STRING);
