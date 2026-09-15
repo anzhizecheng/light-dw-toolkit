@@ -271,4 +271,4 @@ cp CITATION.cff ~/my-paper/
 
 ## 贡献
 
-欢迎 Issue、PR、讨论。
+欢迎 Issue、讨论。
