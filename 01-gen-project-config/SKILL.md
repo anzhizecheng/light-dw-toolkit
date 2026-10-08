@@ -41,7 +41,7 @@ related_skills:
 
 # 项目配置生成器 (Project Config Generator)
 
-> 💡 **核心思想**：在 16 个功能型 skill 之前，必须先有一个「项目脚手架」skill —— 它生成 `project_config.yaml`，定义日志路径、目录结构、增量基线、ETL 状态等元数据。所有其他 skill 启动时**首先**读取此配置。
+> 💡 **核心思想**：在 18 个功能型 skill 之前，必须先有一个「项目脚手架」skill —— 它生成 `project_config.yaml`，定义日志路径、目录结构、增量基线、ETL 状态等元数据。所有其他 skill 启动时**首先**读取此配置。
 
 ---
 
@@ -342,6 +342,7 @@ python -c "import yaml; c=yaml.safe_load(open('project_config.yaml')); print([t 
 | gen-project-plan | `project.*`, `time_point.bizdate` |
 | gen-meeting-minutes | `logging.*`, `directories.meeting_minutes` |
 | gen-requirements-spec | `directories.requirements`, `logging.*` |
+| gen-caliber-archaeology | `directories.requirements`, `logging.*` |
 | gen-metrics-dictionary | `directories.requirements`, `layer_architecture.*` |
 | gen-data-quality-report | `quality_thresholds.*`, `logging.quality_check_log` |
 | gen-source-data-dict | `directories.source_data_dict`, `logging.*` |

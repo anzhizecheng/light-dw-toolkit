@@ -1,6 +1,6 @@
 # light dw toolkit — 轻量级数据仓库工具箱
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Skills](https://img.shields.io/badge/skills-17-green.svg)](#skill-清单) [![Templates](https://img.shields.io/badge/templates-15-orange.svg)](#精简模板库)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Skills](https://img.shields.io/badge/skills-18-green.svg)](#skill-清单) [![Templates](https://img.shields.io/badge/templates-16-orange.svg)](#精简模板库)
 
 > 面向 LLM Agent 的功能型 Skill 集合，覆盖数据仓库建设全流程。 轻量、可独立、可组合。
 
@@ -9,7 +9,7 @@
 
 ## 它是什么？
 
-light dw toolkit 是一套用于数据仓库项目开发交付的工具集。它把传统数仓实施中繁琐的重复劳动，**精简为 15 个 markdown / yaml / sql 模板**，配套 **17 个可独立调用的 Skill**，大幅提升数仓建设的效率。
+light dw toolkit 是一套用于数据仓库项目开发交付的工具集。它把传统数仓实施中繁琐的重复劳动，**精简为 16 个 markdown / yaml / sql 模板**，配套 **18 个可独立调用的 Skill**，大幅提升数仓建设的效率。
 
 ### 设计哲学
 
@@ -33,6 +33,9 @@ light dw toolkit 是一套用于数据仓库项目开发交付的工具集。它
 
 # Phase 1-2 — 项目启动
 02-gen-project-plan             # AI 辅助 WBS + 排期
+
+# Phase 2 — 现状调研（存量改造场景；绿地项目可跳过）
+02a-gen-caliber-archaeology     # 口径考古：从存量报表/SQL 反推口径 + 冲突清单
 
 # Phase 3 — 系统需求
 03-gen-requirements-spec        # BRS 业务需求规格说明书
@@ -64,6 +67,10 @@ light dw toolkit 是一套用于数据仓库项目开发交付的工具集。它
 17-gen-user-manual              # 用户操作手册
 ```
 
+> **存量改造场景（可选前置层）**：如果客户已有报表体系（Tableau / Power BI / 帆软 / 存储过程 / Excel 模板），口径散落在各处且互相对不上，就在 Phase 3 之前插入 `02a-gen-caliber-archaeology`。它把存量资产**解析**成结构化口径清单 + 冲突证据链，直接作为 `03-gen-requirements-spec` 的输入。
+>
+> **边界**：解析层只**发现**冲突，不**裁决**对错——最终用哪套口径由业务 Owner 拍板。这样 `03` 拿到的是一份带证据的待确认清单，而不是一份需要重新访谈的空白问卷。
+
 ### 2. 独立调用
 
 只做单点任务：
@@ -94,6 +101,7 @@ light dw toolkit 是一套用于数据仓库项目开发交付的工具集。它
 |---|---|---|---|---|
 |01|gen-project-config|**0** 基础设施|基础设施|—|
 |02|gen-project-plan|1-2 项目启动|项目管理|—|
+|02a|gen-caliber-archaeology|**2** 现状调研|需求分析|`02a-caliber-archaeology.yaml`|
 |03|gen-requirements-spec|3 系统需求|需求分析|`03-requirements-spec.md`|
 |04|gen-metrics-dictionary|3 系统需求|指标体系|`04-metrics-dictionary.yaml`|
 |05|gen-data-quality-report|7 数据源分析|数据治理|`05-data-quality-report.yaml`|
@@ -114,10 +122,11 @@ light dw toolkit 是一套用于数据仓库项目开发交付的工具集。它
 
 ## 精简模板库
 
-所有模板位于 `[templates/](templates/)`，共 **15 个**：
+所有模板位于 `[templates/](templates/)`，共 **16 个**：
 
 ```
 templates/
+├── 02a-caliber-archaeology.yaml # 口径考古（存量资产解析 + 冲突证据链）
 ├── 03-requirements-spec.md    # BRS 需求规格说明书
 ├── 04-metrics-dictionary.yaml # 指标体系字典
 ├── 05-data-quality-report.yaml# 数据质量 5 维度
@@ -152,6 +161,9 @@ templates/
 ```
                      01-gen-project-config  ◀── 必须首先调用
                             │
+                            ▼
+                 02a-gen-caliber-archaeology  ◀── 存量改造场景入口（绿地项目可跳过）
+                            │  产出 report_list / metrics_list / 歧义清单
                             ▼
                ┌────────────┼────────────┐
                ▼            ▼            ▼
@@ -194,6 +206,18 @@ templates/
           17-gen-user-manual
 ```
 
+### 解析层与相邻层的职责分工
+
+| 层 | Skill | 职责 | 明确不做 |
+|---|---|---|---|
+| **解析层** | 02a-gen-caliber-archaeology | 从存量资产**发现**口径与冲突，产出草案 + 证据链 | ❌ 不裁决最终口径 |
+| 需求层 | 03-gen-requirements-spec | 把草案**成文**为 BRS | ❌ 不解析原始资产 |
+| 指标层 | 04-gen-metrics-dictionary | 把已裁决口径**固化**成指标字典（编码 / 变更日志）| ❌ 不发现冲突 |
+| 结构层 | 06-gen-source-data-dict | 字段级结构支撑；**反向**回喂冲突置信度 | ❌ 不解析 BI 报表 |
+| — | 业务 Owner（人工）| **裁决**冲突 | — |
+
+> 一句话记住分工：**02a 找出来，03 写下来，04 固化住，人拍板。**
+
 ---
 
 ## 关键约束（每个 Skill 强制执行）
@@ -208,6 +232,7 @@ templates/
 |6|cleaning_rules.yaml CORRECT 动作为危险不可逆操作|10-gen-data-cleaning-rules|v1.5：3 阶段警示 + 用户确认|
 |7|拒绝数据必须落 dw_reject_records|12-gen-etl-sql|同时写 cleaning_audit.log|
 |8|所有 Skill 写 skill_execution.log|全部|统一日志机制|
+|9|解析层只**发现**口径冲突，不**裁决**对错；每条口径必须可溯源到「资产 + 定位」|02a-gen-caliber-archaeology|v1.3 新增|
 
 ---
 
@@ -221,13 +246,14 @@ light-dw-toolkit/
 ├── LOGGING-CONVENTION.md           # 统一日志机制
 ├── SKILLS-STRUCTURE.md             # 内部设计文档（归档）
 │
-├── templates/                      # 15 个精简模板
+├── templates/                      # 16 个精简模板
+│   ├── 02a-caliber-archaeology.yaml
 │   ├── 03-requirements-spec.md
 │   ├── 04-metrics-dictionary.yaml
 │   ├── ...
 │   └── 17-user-manual.md
 │
-└── 01-gen-project-config/          # 17 个 Skill 目录
+└── 01-gen-project-config/          # 18 个 Skill 目录
     ├── SKILL.md
     └── ...
 ```

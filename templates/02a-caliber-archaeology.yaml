@@ -1,0 +1,79 @@
+# 口径考古 — 精简模板
+meta:
+  project_name: 项目名称
+  asset_root: /path/to/legacy_assets
+  subject_scope: [销售]              # 试点模式建议只给一个主题域
+  scan_time: 2026-10-08T10:00:00Z
+
+# Step 1 资产清点
+asset_inventory:
+  - asset_id: A-001
+    path: sales_daily.twb
+    type: twb                        # twb|twbx|pbix|cpt|frm|superset_json|sql|view_ddl|excel|doc
+    system: Tableau
+    owner: 销售部
+    parseable: true
+    skip_reason: null                # parseable=false 时必填
+
+# Step 2 口径抽取（未去重，保留全部出现位置）
+metric_candidates:
+  - metric_name: 销售额
+    expression: SUM(o.order_amount)
+    expression_language: sql         # sql|dax|tableau_calc|excel_formula
+    source_asset_id: A-001
+    location: sheet1!计算字段[销售额]
+    dimensions: [日期, 地区, 品类]
+    time_granularity: day
+    owner: 销售部
+
+# Step 3 归一化
+normalized_metrics:
+  - canonical_name: sales_amount
+    aliases: [销售额, 销售金额, 成交额]
+    merge_confidence: high           # high|low（low 表示存疑，交人工确认）
+    canonical_expression: SUM(order_amount)
+    metric_code_suggestion: MET_SALES_001
+
+# Step 4 冲突判定（只判差异，不判对错）
+conflicts:
+  - conflict_id: CF-001
+    canonical_name: sales_amount
+    level: L2                        # L1 语义等价(不计入)|L2 口径差异|L3 同名异义
+    suspected_cause: 含税口径不一致（CRM 含税 / ERP 不含税）
+    decision_owner: 【待业务方指定】
+    status: ⚠️ 待裁决
+    variants:
+      - expression: SUM(o.order_amount)
+        source_asset_id: A-001
+        location: sales_daily.twb#sheet1
+        evidence: "SUM(o.order_amount) AS 销售额"
+      - expression: SUM(f.amount_excl_tax)
+        source_asset_id: A-007
+        location: erp_revenue_view.sql:L18
+        evidence: "SUM(f.amount_excl_tax) AS 销售额"
+
+# Step 5 落位（直接喂 gen-requirements-spec）
+report_list:
+  - report_name: 销售日报
+    subject_area: 销售
+    purpose: 监控当日销售
+    frequency: 日
+    priority: P0
+    source_asset_id: A-001
+
+data_sources:
+  - system: CRM
+    type: MySQL
+    main_tables: [t_order, t_customer]
+    update_frequency: T+1
+
+outstanding_items:
+  - item: 销售额含税口径（CF-001）
+    blocking: true
+    owner: 【待业务方指定】
+
+# 移交记录（试点模式：验收标准 = 客户团队独立完成第二个主题的口径草案）
+handover:
+  handover_done: false
+  trained_persons: []
+  second_subject_draft: null         # 客户团队独立产出的草案路径，作为移交验收证据
