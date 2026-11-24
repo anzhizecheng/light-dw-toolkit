@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "light-dw-toolkit"
+version = "2.0.0"
+description = "轻量级单机数仓执行引擎：YAML 定义指标，DuckDB 计算，一键生成看板"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "anzhizecheng" }]
+keywords = ["data-warehouse", "duckdb", "semantic-layer", "metrics", "dashboard", "etl"]
+dependencies = [
+  "duckdb>=1.0",
+  "pandas>=2.0",
+  "pyarrow>=14.0",
+  "PyYAML>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/anzhizecheng/light-dw-toolkit"
+Repository = "https://github.com/anzhizecheng/light-dw-toolkit"
+
+[project.scripts]
+dw = "dw.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["dw*"]

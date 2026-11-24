@@ -1,315 +1,252 @@
-# light dw toolkit — 轻量级数据仓库工具箱
+# light-dw-toolkit V2
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Skills](https://img.shields.io/badge/skills-18-green.svg)](#skill-清单) [![Templates](https://img.shields.io/badge/templates-16-orange.svg)](#精简模板库)
+> YAML 定义口径，DuckDB 计算，一条命令出看板。
 
-> 面向 LLM Agent 的功能型 Skill 集合，覆盖数据仓库建设全流程。 轻量、可独立、可组合。
+面向个人、小团队和 AI Agent 的单机轻量数仓引擎。不依赖 Spark、调度平台或 BI 服务，
+把「数据导入 → 源数据体检 → 指标语义层 → 取数校验 → 静态看板」收敛为一条可复现的链路。
 
----
+## 特性
 
+- **声明式口径**：`metrics.yaml` 是指标的唯一事实源，所有数字都由它生成 SQL 计算
+- **确定性 SQL**：同一份配置、同一份数据，永远得到同一结果，可审计、可 diff
+- **四种指标类型**：`simple` / `ratio` / `derived` / `sql`，覆盖聚合、比率、复合与自定义 SQL
+- **零服务依赖**：DuckDB 单文件存储，看板是纯静态 HTML，可直接归档或托管
+- **源数据体检**：自动扫描 Excel / CSV / Parquet，落地 Parquet 并输出字段质量报告
 
-## 它是什么？
+## 安装
 
-light dw toolkit 是一套用于数据仓库项目开发交付的工具集。它把传统数仓实施中繁琐的重复劳动，**精简为 16 个 markdown / yaml / sql 模板**，配套 **18 个可独立调用的 Skill**，大幅提升数仓建设的效率。
+```bash
+git clone https://github.com/anzhizecheng/light-dw-toolkit.git
+cd light-dw-toolkit
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+dw --help
+```
 
-### 设计哲学
+要求 Python 3.10+。
 
-|原则|说明|
+## 快速开始
+
+### 1. 初始化项目
+
+```bash
+dw init --root ./my-dw --source /path/to/events.csv
+```
+
+生成：
+
+```
+my-dw/
+├── config/project.yaml
+├── data/raw/
+├── output/
+└── logs/
+```
+
+`project.yaml` 示例：
+
+```yaml
+name: 我的分析项目
+source_file: "/path/to/events.csv"
+timezone: Asia/Shanghai
+data:
+  raw: data/raw
+  database: data/warehouse.duckdb
+```
+
+### 2. 导入数据
+
+方式一：按 `schema.yaml` 精确导入 CSV（推荐，字段类型可控）。
+
+```yaml
+# config/schema.yaml
+events:
+  - { name: user_id, type: STRING }
+  - { name: event, type: STRING }
+  - { name: date1, type: STRING }
+  - { name: amount, type: FLOAT }
+```
+
+```bash
+dw ingest --root ./my-dw --table events
+```
+
+CSV 默认无表头、逗号分隔、双引号转义；写入 `raw.events` 并同步导出 Parquet。
+
+方式二：自动扫描源文件，生成 `sources.yaml` 与体检报告。
+
+```bash
+dw profile --root ./my-dw
+```
+
+支持 `.xlsx` / `.xls` / `.xlsm`（全部 Sheet）与 `.csv` / `.parquet`。
+CSV 默认按首行表头解析；无表头 CSV 请走 `ingest` 的 `schema.yaml` 路径。
+
+### 3. 定义指标
+
+```yaml
+# config/metrics.yaml
+version: 2
+source: raw.events
+time_column: CAST(date1 AS DATE)
+
+metrics:
+  - name: dau
+    label: 日活用户
+    type: simple
+    agg: count_distinct
+    expr: user_id
+    where: "event = 'app_start'"
+    format: count
+    description: 当日启动 App 的去重用户数
+
+  - name: pay_amount
+    label: 支付金额
+    type: simple
+    agg: sum
+    expr: amount
+    where: "event = 'pay_success'"
+    format: amount
+
+  - name: arpu
+    label: 人均支付金额
+    type: ratio
+    numerator: pay_amount
+    denominator: dau
+    format: amount
+
+dimensions:
+  - { name: app, column: platform_name }
+  - { name: city, column: city }
+```
+
+`metrics.yaml` 既支持全局 `source` / `time_column`，也支持在单个指标上覆盖；
+用户表这类没有时间字段的指标，把 `time_column` 设为 `null` 即可。
+
+### 4. 取数校验
+
+```bash
+dw metrics --root ./my-dw
+dw query --root ./my-dw -m dau -g day
+dw query --root ./my-dw -m pay_amount -d app
+```
+
+### 5. 生成看板
+
+```yaml
+# config/roles.yaml
+title: 经营概览
+subtitle: 数据源 raw.events
+
+roles:
+  - name: overview
+    label: 总览
+    start: "2024-01-01"
+    end: "2024-01-31"
+    kpis: [dau, pay_amount, arpu]
+    panels:
+      - type: trend
+        title: 日活趋势
+        grain: day
+        metrics: [dau]
+      - type: pie
+        title: 渠道分布
+        metric: dau
+        dimension: app
+        top: 8
+      - type: bar
+        title: 城市 Top10
+        metric: dau
+        dimension: city
+        limit: 10
+```
+
+```bash
+dw dashboard --root ./my-dw
+```
+
+输出 `output/dashboard.html`，可直接用浏览器打开。
+
+## CLI
+
+| 命令 | 作用 |
 |---|---|
-|**轻量模板**|使用 AI 友好的 markdown / yaml / sql 文件格式|
-|**功能解耦**|每个 Skill 独立，按需调用，不绑定阶段|
-|**禁止编造**|每个 Skill 显式声明「禁止编造」，待确认的部分通过人工交互补充|
+| `dw init` | 初始化项目目录与 `project.yaml` |
+| `dw ingest --table T` | 按 `schema.yaml` 把 CSV 导入 `raw.T` |
+| `dw profile` | 扫描源文件、落地 Parquet、生成 `sources.yaml` 与体检报告 |
+| `dw metrics` | 列出全部指标及口径 |
+| `dw query -m M [-d DIM] [-g GRAIN] [-s START] [-e END]` | 按指标取数 |
+| `dw dashboard` | 按 `roles.yaml` 生成静态 HTML 看板 |
 
----
+`--root` 可写在子命令前或后，默认当前目录。
 
-## 快速上手
+## YAML 约定
 
-### 1. 完整数仓项目（推荐顺序）
+### 指标类型
 
-按 SOP Phase 0→15 顺序，一个一个调用：
-
-```
-# Phase 0 — 初始化
-01-gen-project-config          # 生成 project_config.yaml
-
-# Phase 1-2 — 项目启动
-02-gen-project-plan             # AI 辅助 WBS + 排期
-
-# Phase 2 — 现状调研（存量改造场景；绿地项目可跳过）
-02a-gen-caliber-archaeology     # 口径考古：从存量报表/SQL 反推口径 + 冲突清单
-
-# Phase 3 — 系统需求
-03-gen-requirements-spec        # BRS 业务需求规格说明书
-04-gen-metrics-dictionary       # 指标体系字典
-
-# Phase 7 — 数据源分析
-05-gen-data-quality-report      # 数据质量 5 维度评估
-06-gen-source-data-dict         # 源端数据字典
-
-# Phase 8 — 数据模型设计
-07-gen-dimension-model          # CDM / LDM 维度模型
-08-gen-ddl-scripts              # 物理 DDL（4/3 层可配，多引擎方言）
-
-# Phase 9 — ETL 设计
-09-gen-etl-mapping              # 字段级映射 + 维表优先加载序
-10-gen-data-cleaning-rules      # 清洗规则 + 拒绝数据落库 + CORRECT 3 阶段警示
-
-# Phase 12 — 系统开发
-11-gen-test-cases               # SIT/UAT 4 大类测试用例
-12-gen-etl-sql                  # ETL SQL（集成清洗规则 + 审计日志）
-13-gen-etl-workflow             # ETL 调度 DAG（含 clean_task 节点）
-14-gen-etl-unit-tests           # ETL 单元测试脚本
-
-# Phase 13 — 系统测试
-15-gen-sit-scripts              # 跨层对账 + 清洗审计验证
-
-# Phase 14-15 — 部署与交付
-16-gen-deploy-plan              # 部署方案 + 回滚预案
-17-gen-user-manual              # 用户操作手册
-```
-
-> **存量改造场景（可选前置层）**：如果客户已有报表体系（Tableau / Power BI / 帆软 / 存储过程 / Excel 模板），口径散落在各处且互相对不上，就在 Phase 3 之前插入 `02a-gen-caliber-archaeology`。它把存量资产**解析**成结构化口径清单 + 冲突证据链，直接作为 `03-gen-requirements-spec` 的输入。
->
-> **边界**：解析层只**发现**冲突，不**裁决**对错——最终用哪套口径由业务 Owner 拍板。这样 `03` 拿到的是一份带证据的待确认清单，而不是一份需要重新访谈的空白问卷。
-
-### 2. 独立调用
-
-只做单点任务：
-
-```
-用户: "帮我生成指标字典"
-助手: 触发 04-gen-metrics-dictionary
-输入: 业务目标、报表清单
-输出: metrics.yaml
-```
-
-### 3. 组合调用
-
-复用已有产出：
-
-```
-用户: "我已经有 data_dict 和 quality_report，想生成清洗规则"
-助手: 触发 10-gen-data-cleaning-rules
-输入: data_dict + quality_report + data_standard_doc (可选)
-输出: cleaning_rules.yaml + reject_records_schema.sql
-```
-
----
-
-## Skill 清单
-
-|#|Skill|SOP Phase|类型|精简模板|
-|---|---|---|---|---|
-|01|gen-project-config|**0** 基础设施|基础设施|—|
-|02|gen-project-plan|1-2 项目启动|项目管理|—|
-|02a|gen-caliber-archaeology|**2** 现状调研|需求分析|`02a-caliber-archaeology.yaml`|
-|03|gen-requirements-spec|3 系统需求|需求分析|`03-requirements-spec.md`|
-|04|gen-metrics-dictionary|3 系统需求|指标体系|`04-metrics-dictionary.yaml`|
-|05|gen-data-quality-report|7 数据源分析|数据治理|`05-data-quality-report.yaml`|
-|06|gen-source-data-dict|7 数据源分析|数据治理|`06-source-data-dict.yaml`|
-|07|gen-dimension-model|8 数据模型|建模|`07-dimension-model.md`|
-|08|gen-ddl-scripts|8 数据模型|建模|`08-ddl-spec.yaml`|
-|09|gen-etl-mapping|9 ETL 设计|ETL|`09-etl-mapping.yaml`|
-|10|gen-data-cleaning-rules|9 ETL 设计|数据治理|`10-cleaning-rules.yaml`|
-|11|gen-test-cases|11/13 测试|测试|`11-test-cases.yaml`|
-|12|gen-etl-sql|12 系统开发|ETL|`12-etl-sql.md`|
-|13|gen-etl-workflow|12 系统开发|ETL|`13-etl-workflow.yaml`|
-|14|gen-etl-unit-tests|12 系统开发|测试|`14-etl-unit-tests.sql`|
-|15|gen-sit-scripts|13 系统测试|测试|`15-sit-tests.yaml`|
-|16|gen-deploy-plan|14 上线试运行|运维|`16-deploy-plan.md`|
-|17|gen-user-manual|13/15 交付|文档|`17-user-manual.md`|
-
----
-
-## 精简模板库
-
-所有模板位于 `[templates/](templates/)`，共 **16 个**：
-
-```
-templates/
-├── 02a-caliber-archaeology.yaml # 口径考古（存量资产解析 + 冲突证据链）
-├── 03-requirements-spec.md    # BRS 需求规格说明书
-├── 04-metrics-dictionary.yaml # 指标体系字典
-├── 05-data-quality-report.yaml# 数据质量 5 维度
-├── 06-source-data-dict.yaml   # 源端数据字典
-├── 07-dimension-model.md      # CDM / LDM + 命名规范
-├── 08-ddl-spec.yaml           # 物理 DDL 规范
-├── 09-etl-mapping.yaml        # ETL 字段级映射
-├── 10-cleaning-rules.yaml     # 清洗规则 (v1.5: CORRECT 3 阶段警示)
-├── 11-test-cases.yaml         # 4 大类 SIT/UAT 用例
-├── 12-etl-sql.md              # ETL SQL 脚本规范
-├── 13-etl-workflow.yaml       # DAG 调度定义
-├── 14-etl-unit-tests.sql      # 单元测试 SQL
-├── 15-sit-tests.yaml          # SIT 集成测试
-├── 16-deploy-plan.md          # 部署上线方案
-└── 17-user-manual.md          # 用户操作手册
-```
-
-格式说明：
-
-|格式|用途|示例|
+| 类型 | 字段 | 说明 |
 |---|---|---|
-|**yaml**|结构化配置（指标字典、清洗规则、DAG、测试用例）|`.yaml`|
-|**markdown**|叙述性文档（需求、模型、手册、SQL 规范）|`.md`|
-|**sql**|可执行 SQL 脚本（单元测试）|`.sql`|
+| `simple` | `agg` + `expr` + `where` | 单次聚合，`agg` 支持 sum/count/count_distinct/avg/min/max |
+| `ratio` | `numerator` + `denominator` | 两个 simple 指标相除，分母为 0 返回空 |
+| `derived` | `expr` | 引用其他指标的表达式，如 `pay_amount / dau` |
+| `sql` | `sql` | 直接执行 DuckDB SQL，支持 `{start}` / `{end}` 占位符 |
 
-> 为什么不用 Excel？— 因为 AI 解析 `.xlsx` 需要依赖 `openpyxl` / `pandas`， 而 `.yaml` 可以直接读、直接写、直接 diff。对 AI 来说 YAML 比 Excel 更友好。
+### 展示格式
 
----
+`format` 支持 `amount`（自动万/亿）、`percent`、`number`、`count`。
+未声明时，`ratio` 默认按百分比展示，其余按整数展示。
 
-## Skill 间的契约依赖
+### 看板面板
 
-```
-                     01-gen-project-config  ◀── 必须首先调用
-                            │
-                            ▼
-                 02a-gen-caliber-archaeology  ◀── 存量改造场景入口（绿地项目可跳过）
-                            │  产出 report_list / metrics_list / 歧义清单
-                            ▼
-               ┌────────────┼────────────┐
-               ▼            ▼            ▼
-         03-requirements  04-metrics  02-project
-            -spec          -dictionary   -plan
-                            │
-                            ▼
-               ┌────────────┼────────────┐
-               ▼            ▼            ▼
-         06-source-data   05-data-quality
-            -dict          -report
-               │            │
-               ▼            ▼
-            └────┬─────────┘
-                 ▼
-          07-gen-dimension-model
-                 │
-                 ▼
-           08-gen-ddl-scripts
-                 │
-                 ▼
-          09-gen-etl-mapping
-                 │
-                 ▼
-          10-gen-data-cleaning-rules
-                 │
-        ┌────────┼────────┐
-        ▼        ▼        ▼
-   12-gen-etl  13-gen-etl  14-gen-etl
-    -sql       -workflow    -unit-tests
-        │        │        │
-        └────────┼────────┘
-                 ▼
-          15-gen-sit-scripts
-                 │
-                 ▼
-          16-gen-deploy-plan
-                 │
-                 ▼
-          17-gen-user-manual
-```
+| 类型 | 必填字段 | 说明 |
+|---|---|---|
+| `trend` | `metrics`、`grain` | 多指标时间趋势 |
+| `bar` | `metric`、`dimension` | 维度排行 |
+| `pie` | `metric`、`dimension` | 环形图，`top` 控制 TopN |
+| `funnel` | `steps: [{metric, label}]` | 漏斗 |
+| `compare` | `metrics: [{metric, label}]` | 多指标对比柱状图 |
 
-### 解析层与相邻层的职责分工
+KPI 支持字符串或对象写法，对象可加 `label` 与 `extra`（合计/日均等副值）。
+页面底部会自动生成「口径说明」表，内容全部来自 `metrics.yaml`。
 
-| 层 | Skill | 职责 | 明确不做 |
-|---|---|---|---|
-| **解析层** | 02a-gen-caliber-archaeology | 从存量资产**发现**口径与冲突，产出草案 + 证据链 | ❌ 不裁决最终口径 |
-| 需求层 | 03-gen-requirements-spec | 把草案**成文**为 BRS | ❌ 不解析原始资产 |
-| 指标层 | 04-gen-metrics-dictionary | 把已裁决口径**固化**成指标字典（编码 / 变更日志）| ❌ 不发现冲突 |
-| 结构层 | 06-gen-source-data-dict | 字段级结构支撑；**反向**回喂冲突置信度 | ❌ 不解析 BI 报表 |
-| — | 业务 Owner（人工）| **裁决**冲突 | — |
+## 设计原则
 
-> 一句话记住分工：**02a 找出来，03 写下来，04 固化住，人拍板。**
-
----
-
-## 关键约束（每个 Skill 强制执行）
-
-|#|约束|执行 Skill|说明|
-|---|---|---|---|
-|1|DDL 默认 4 层；可切换 3 层|08-gen-ddl-scripts|`layer_architecture` 参数控制|
-|2|ETL 加载顺序：DIM → ODS → DWD → DWS → ADS|09-gen-etl-mapping|维表优先加载|
-|3|ETL SQL 必须基于 mapping_doc|12-gen-etl-sql|禁止编造字段映射|
-|4|DAG 任务依赖必须与 load_order 一致|13-gen-etl-workflow|防止任务乱序|
-|5|每个 transform 前必须有 clean_task|13-gen-etl-workflow|v1.2 强制|
-|6|cleaning_rules.yaml CORRECT 动作为危险不可逆操作|10-gen-data-cleaning-rules|v1.5：3 阶段警示 + 用户确认|
-|7|拒绝数据必须落 dw_reject_records|12-gen-etl-sql|同时写 cleaning_audit.log|
-|8|所有 Skill 写 skill_execution.log|全部|统一日志机制|
-|9|解析层只**发现**口径冲突，不**裁决**对错；每条口径必须可溯源到「资产 + 定位」|02a-gen-caliber-archaeology|v1.3 新增|
-
----
+1. **口径即代码**：指标定义与展示配置都在 YAML 中，可评审、可版本化
+2. **只读 raw**：导入后原始层不被修改，所有计算在查询时完成
+3. **确定性**：语义层只生成 SQL，不在 Python 侧做隐式计算
+4. **轻量**：一个 DuckDB 文件 + 一个 HTML 文件即可交付
 
 ## 目录结构
 
 ```
-light-dw-toolkit/
-├── LICENSE                         # Apache 2.0
-├── CITATION.cff                    # 引用文件
-├── README.md                       # 本文档
-├── LOGGING-CONVENTION.md           # 统一日志机制
-├── SKILLS-STRUCTURE.md             # 内部设计文档（归档）
-│
-├── templates/                      # 16 个精简模板
-│   ├── 02a-caliber-archaeology.yaml
-│   ├── 03-requirements-spec.md
-│   ├── 04-metrics-dictionary.yaml
-│   ├── ...
-│   └── 17-user-manual.md
-│
-└── 01-gen-project-config/          # 18 个 Skill 目录
-    ├── SKILL.md
-    └── ...
+dw/
+├── cli.py        # 命令行入口
+├── config.py     # 项目上下文与配置加载
+├── ingest.py     # 按 schema 导入 CSV
+├── profile.py    # 源文件扫描与体检
+├── semantic.py   # 指标语义层与 SQL 生成
+└── dashboard.py  # 声明式看板生成
 ```
 
----
+## 与 AI Agent 配合
 
-## 引用方式
+- 输入全部是 YAML，Agent 可以直接生成或修改，无需理解内部 Python
+- 输出是确定性的 CLI 文本与静态 HTML，便于自动对账与回归
+- 推荐流程：Agent 生成 `project/schema/metrics/roles` → 人工评审口径 → `dw query` 对账 → `dw dashboard`
 
-### BibTeX
+## 适用边界
 
-```
-@software{lightdwtoolkit,
-  author  = {anzhizecheng},
-  title   = {light dw toolkit: 轻量级数据仓库建设 AI 工具箱},
-  year    = {2026},
-  month   = sep,
-  version = {2.0.0},
-  license = {Apache-2.0},
-  url     = {https://github.com/anzhizecheng/light-dw-toolkit}
-}
-```
+适合：单机、百万到千万行、批量分析、指标口径需要审计的场景。
 
-### 纯文本
+不适合：TB 级数据、实时/流式、多租户权限、复杂调度。这些场景请使用数仓平台
+（如 Doris / ClickHouse / Snowflake）或调度系统。
 
-> anzhizecheng. (2026). _light dw toolkit: 轻量级数据仓库建设 AI 工具箱_ (v2.0.0). [Computer software]. [https://github.com/anzhizecheng/light-dw-toolkit](https://github.com/anzhizecheng/light-dw-toolkit)
+已知限制：
 
-### 直接复制 CITATION.cff
+- SQL 指标不支持维度与时间粒度下钻（由 SQL 自行聚合）
+- 同一次查询涉及的指标必须来自同一数据源、同一时间字段
+- 看板为静态 HTML，不含鉴权
 
-```
-cp CITATION.cff ~/my-paper/
-```
+## License
 
----
-
-## 许可
-
-本项目基于 **Apache License 2.0** 开源。详见 [LICENSE](LICENSE)。
-
-**SPDX-License-Identifier:** `Apache-2.0`
-
----
-
-## 免责声明
-
-本项目生成的 SQL、DDL、配置文件和文档不保证零错误，使用即代表同意以下约定：
-
-| #   | 约定               | 原因                                                                                                                               |
-| --- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **对 AI 输出物人工审核** | 指标口径、字段映射、清洗规则涉及业务决策，不同 AI 模型可能存在理解偏差，必须由相关责任人确认后再进入下一环节                                                                         |
-| 2   | **禁止直接操作生产环境**   | 所有变更必须先在测试/开发环境验证通过。尤其 `10-gen-data-cleaning-rules` 的 `CORRECT` 操作和 `08-gen-ddl-scripts` 的 `DROP COLUMN` / `REPLACE TABLE` 是不可逆的 |
-| 3   | **做好备份**         | 执行 DDL 变更前，对受影响的表做快照或 `CREATE TABLE AS SELECT` 备份，保留回滚点                                                                          |
-| 4   | **敏感数据不出本地**     | 使用 Skill 时不要把生产库中的敏感信息（身份证、手机号、银行卡号、apikey 等）粘贴到对话里。生成的 SQL 中如果包含字段级脱敏逻辑，执行前检查脱敏规则是否合规                                           |
-| 5   | **理解技术栈差异**      | 不保证生成的 SQL 或代码可以零修改直接在目标引擎运行。不同技术选型可能在语法、接口、性能、配置等方面存在差异，使用者需自行适配和验证                                                             |
-
----
-
-## 贡献
-
-欢迎 Issue、讨论。
+Apache-2.0。引用方式见 [CITATION.cff](CITATION.cff)。

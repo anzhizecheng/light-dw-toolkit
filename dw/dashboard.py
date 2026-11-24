@@ -11,13 +11,6 @@ from . import semantic
 PALETTE = ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2",
            "#59A14F", "#EDC948", "#B07AA1", "#9C755F", "#BAB0AC"]
 
-STAGE_LABEL = {"lead": "线索", "opportunity": "商机", "order": "订单",
-               "invoice": "开票", "payment": "回款"}
-
-AMOUNT_METRICS = {"lead_amount", "opp_amount", "order_amount",
-                  "invoice_amount", "payment_amount", "outstanding_amount"}
-
-
 def _clean(v):
     if v is None or (isinstance(v, float) and pd.isna(v)):
         return None
@@ -28,15 +21,10 @@ def _clean(v):
     return str(v)
 
 
-def _metric_fmt(m: dict, name: str) -> str:
-    fmt = m.get("format")
-    if fmt:
-        return fmt
-    if name in AMOUNT_METRICS:
-        return "amount"
-    if m.get("type") == "ratio" or (m.get("agg") == "avg" and "rate" in name):
-        return "percent"
-    return "count"
+def _metric_fmt(m: dict) -> str:
+    if m.get("format"):
+        return m["format"]
+    return "percent" if m.get("type") == "ratio" else "count"
 
 
 def _fmt(v, fmt: str = "count") -> str:
@@ -73,25 +61,21 @@ def _kpi_cards(project, role) -> tuple[str, str]:
             em = metrics.get(ex["metric"], {})
             ev = semantic.scalar(project, ex["metric"], start, end)
             sub += (f'<span class="kpi-sub">{ex.get("label", ex["metric"])} '
-                    f'<b>{_fmt(ev, _metric_fmt(em, ex["metric"]))}</b></span>')
+                    f'<b>{_fmt(ev, _metric_fmt(em))}</b></span>')
         cards.append(
             f'<div class="kpi"><div class="kpi-label">{label}</div>'
-            f'<div class="kpi-value">{_fmt(v, _metric_fmt(m, name))}</div>'
+            f'<div class="kpi-value">{_fmt(v, _metric_fmt(m))}</div>'
             f'{f"<div class=kpi-extras>{sub}</div>" if sub else ""}</div>'
         )
     return "".join(cards), ""
 
 
-DEFAULT_FUNNEL = [{"metric": "lead_count", "label": "线索"},
-                  {"metric": "opp_count", "label": "商机"},
-                  {"metric": "order_count", "label": "订单"},
-                  {"metric": "invoice_count", "label": "开票"},
-                  {"metric": "payment_count", "label": "回款"}]
-
-
 def _panel_funnel(project, role, panel) -> dict:
+    steps = panel.get("steps") or []
+    if not steps:
+        return {"series": []}
     items = []
-    for step in panel.get("steps") or DEFAULT_FUNNEL:
+    for step in steps:
         metric, label = step["metric"], step.get("label", step["metric"])
         v = semantic.scalar(project, metric, role.get("start"), role.get("end")) or 0
         items.append({"name": label, "value": int(v)})
@@ -151,10 +135,8 @@ def _panel_bar(project, role, panel) -> dict:
     df = df.sort_values(name, ascending=False).head(panel.get("limit", 12))
     cats = [str(x) for x in df[dim]]
     vals = [_clean(v) for v in df[name]]
-    is_amount = name in AMOUNT_METRICS
     return {
-        "tooltip": {"trigger": "axis",
-                    "valueFormatter": None},
+        "tooltip": {"trigger": "axis"},
         "grid": {"left": 70, "right": 24, "top": 20, "bottom": 60},
         "xAxis": {"type": "category", "data": cats,
                   "axisLabel": {"rotate": 30, "fontSize": 10}},
@@ -163,7 +145,7 @@ def _panel_bar(project, role, panel) -> dict:
             "type": "bar", "data": vals, "barMaxWidth": 36,
             "itemStyle": {"color": PALETTE[0], "borderRadius": [4, 4, 0, 0]},
             "label": {"show": True, "position": "top", "fontSize": 10,
-                      "formatter": "{c}" if not is_amount else "{c}"},
+                      "formatter": "{c}"},
         }],
     }
 
@@ -206,7 +188,7 @@ def _panel_compare(project, role, panel) -> dict:
         name = it["metric"]
         m = metrics.get(name, {})
         v = semantic.scalar(project, name, role.get("start"), role.get("end"))
-        fmt = it.get("format") or _metric_fmt(m, name)
+        fmt = it.get("format") or _metric_fmt(m)
         cats.append(it.get("label", name))
         data.append({
             "value": _clean(v),

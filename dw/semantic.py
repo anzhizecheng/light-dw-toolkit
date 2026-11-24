@@ -158,20 +158,22 @@ def build_sql(project, metric: str, dimensions: list[str] | None = None,
 def _resolve_source(conf: dict, metrics: dict, simple_needed: list[str]) -> tuple[str, str | None]:
     """指标可覆盖全局 source / time_column；同一次查询内必须一致。"""
     def src(m):
-        return m.get("source") or conf.get("source", "clean.fct_funnel")
+        return m.get("source") or conf.get("source")
 
     def tcol(m):
-        return m["time_column"] if "time_column" in m else conf.get("time_column", "event_date")
+        return m["time_column"] if "time_column" in m else conf.get("time_column")
 
     sources = {src(metrics[n]) for n in simple_needed}
     if len(sources) > 1:
         raise SemanticError("同一查询内的指标必须来自同一数据源：" + "、".join(sorted(sources)))
-    source = sources.pop() if sources else conf.get("source", "clean.fct_funnel")
+    source = sources.pop() if sources else conf.get("source")
+    if not source:
+        raise SemanticError("metrics.yaml 未声明数据源：请设置全局 source 或指标级 source")
 
     tcols = {tcol(metrics[n]) for n in simple_needed}
     if len(tcols) > 1:
         raise SemanticError("同一查询内的指标必须使用同一时间字段")
-    time_col = tcols.pop() if tcols else conf.get("time_column", "event_date")
+    time_col = tcols.pop() if tcols else conf.get("time_column")
     return source, time_col
 
 

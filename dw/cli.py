@@ -4,25 +4,22 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from . import dashboard, ingest, pipeline, profile, semantic
+from . import dashboard, ingest, profile, semantic
 from .config import Project
 
 DEFAULT_PROJECT = """\
 name: 未命名分析项目
-industry: crm-sales
 source_file: ""
 timezone: Asia/Shanghai
 data:
   raw: data/raw
-  clean: data/clean
-  mart: data/mart
-  database: data/demo.duckdb
+  database: data/warehouse.duckdb
 """
 
 
 def _cmd_init(args) -> None:
     root = Path(args.root).expanduser().resolve()
-    for sub in ("config", "data/raw", "data/clean", "data/mart", "output", "logs"):
+    for sub in ("config", "data/raw", "output", "logs"):
         (root / sub).mkdir(parents=True, exist_ok=True)
     cfg = root / "config" / "project.yaml"
     if not cfg.exists():
@@ -45,11 +42,6 @@ def _cmd_profile(args) -> None:
     project = Project.load(args.root)
     sheets = args.sheets.split(",") if args.sheets else None
     profile.run(project, sheets)
-
-
-def _cmd_run(args) -> None:
-    project = Project.load(args.root)
-    pipeline.run(project)
 
 
 def _cmd_metrics(args) -> None:
@@ -101,9 +93,6 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("profile", parents=[common], help="扫描源文件，落地 raw Parquet 并生成 sources/体检报告")
     sp.add_argument("--sheets", help="仅处理指定 sheet，逗号分隔")
     sp.set_defaults(func=_cmd_profile)
-
-    sp = sub.add_parser("run", parents=[common], help="清洗并构建 clean/mart 事实表")
-    sp.set_defaults(func=_cmd_run)
 
     sp = sub.add_parser("metrics", parents=[common], help="列出指标口径")
     sp.set_defaults(func=_cmd_metrics)

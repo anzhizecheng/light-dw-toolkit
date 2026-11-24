@@ -23,7 +23,11 @@ def run(project, table: str) -> dict:
         raise RuntimeError(f"schema.yaml 缺少表结构：{table}")
     schema = schema_conf[table]
 
-    src = Path(project.cfg["csv"][table]).expanduser()
+    csv_conf = project.cfg.get("csv") or {}
+    src_value = csv_conf.get(table) or project.cfg.get("source_file")
+    if not src_value:
+        raise RuntimeError(f"未配置 {table} 的 CSV 路径：请在 project.yaml 设置 csv.{table} 或 source_file")
+    src = Path(src_value).expanduser()
     if not src.exists():
         raise FileNotFoundError(f"CSV 不存在：{src}")
 

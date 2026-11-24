@@ -6,3 +6,21 @@
 .env
 .vscode/
 .idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+
+# 运行时产物
+data/
+output/
+logs/
+*.duckdb
+*.duckdb.wal
+*.parquet
