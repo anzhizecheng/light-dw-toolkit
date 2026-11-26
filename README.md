@@ -12,6 +12,7 @@
 - **四种指标类型**：`simple` / `ratio` / `derived` / `sql`，覆盖聚合、比率、复合与自定义 SQL
 - **零服务依赖**：DuckDB 单文件存储，看板是纯静态 HTML，可直接归档或托管
 - **源数据体检**：自动扫描 Excel / CSV / Parquet，落地 Parquet 并输出字段质量报告
+- **可移植 Skill**：`skills/light-dw/SKILL.md` 是纯指令包，适用于任何支持 SKILL.md 或项目规则的 AI 助手
 
 ## 安装
 
@@ -226,13 +227,54 @@ dw/
 ├── profile.py    # 源文件扫描与体检
 ├── semantic.py   # 指标语义层与 SQL 生成
 └── dashboard.py  # 声明式看板生成
+
+skills/
+└── light-dw/
+    └── SKILL.md  # 可移植 Skill，薄封装 dw CLI
 ```
 
-## 与 AI Agent 配合
+## Skill 安装与使用
 
-- 输入全部是 YAML，Agent 可以直接生成或修改，无需理解内部 Python
-- 输出是确定性的 CLI 文本与静态 HTML，便于自动对账与回归
-- 推荐流程：Agent 生成 `project/schema/metrics/roles` → 人工评审口径 → `dw query` 对账 → `dw dashboard`
+`skills/light-dw/SKILL.md` 是一个纯 Markdown 指令包（YAML frontmatter + 执行步骤），
+不绑定任何 AI 助手。它只负责检查环境、编排 `dw` 命令和校验结果，所有计算仍由引擎完成。
+
+前置条件：先在本仓库执行 `pip install -e .`，确认 `dw --help` 可用。
+
+### 安装到不同助手
+
+把整个 `skills/light-dw/` 目录复制到所用助手的技能目录，目录名保持 `light-dw`：
+
+| 助手类型 | 安装方式 |
+|---|---|
+| 支持 SKILL.md 的助手 | 复制到该助手的 skills 目录，例如 Claude Code 的 `~/.claude/skills/light-dw/` 或项目内 `.claude/skills/light-dw/` |
+| 支持项目规则文件的助手 | 把 `SKILL.md` 内容并入 `AGENTS.md`、`.cursorrules` 等规则文件 |
+| 不支持技能的助手 | 直接把 `SKILL.md` 作为对话前置指令粘贴，或按文中步骤手动执行 `dw` |
+
+Skill 不含供应商专有路径，可以随仓库分发，也可以改造成团队自己的流程。
+
+### 触发词
+
+安装后，在对话中提到以下任一意图即可触发：
+
+`轻量数仓`、`建数仓`、`指标口径`、`SQL 取数`、`生成数据看板`、`CSV 导入 DuckDB`、`dw`
+
+示例：
+
+- “用轻量数仓把这份 CSV 建成指标看板”
+- “帮我把这些数据导入 DuckDB，并生成日活看板”
+- “用 dw 校验一下支付金额口径”
+
+### Skill 的执行流程
+
+1. 检查 `dw --help`，不可用则在仓库根目录 `pip install -e .`
+2. `dw init` 初始化项目
+3. `dw ingest` 按 schema 导入，或 `dw profile` 自动体检
+4. 维护 `metrics.yaml`，用 `dw metrics` 与 `dw query` 校验
+5. 维护 `roles.yaml`，用 `dw dashboard` 输出 `output/dashboard.html`
+
+内置约束：raw 只读、未实际 query 不报数、同查询指标必须同源、SQL 指标不可下钻。
+
+Skill 只是编排层。需要调整流程时直接修改 `SKILL.md`，不要把引擎逻辑复制进去。
 
 ## 适用边界
 
